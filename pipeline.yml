@@ -64,9 +64,6 @@ groups:
   - name: app
       jobs:
         - build-and-test
-#  - name: pipeline
-#    jobs:
-#      - deploy-pipeline
 
 jobs:
   - name: build-and-test
@@ -85,21 +82,3 @@ jobs:
         file: app-ci-source/ci/tasks/build-and-test.yml
         params:
           MY_PARAM: {{my-param}}
-
-#  - name: deploy-pipeline
-#    serial: true
-#    plan:
-#      - in_parallel:
-#          - get: app-ci-source
-#            trigger: true
-#          - get: pipeline-source
-#            trigger: true
-#      - task: deploy-pipeline
-#        privileged: true
-#        file: pipeline-source/tasks/deploy-pipeline.yml
-#        params:
-#          PIPELINE_NAME: {{app-project-name}}
-#          CONCOURSE_USER: {{concourse-username-am2-prod}}
-#          CONCOURSE_PASS: {{concourse-password-am2-prod}}
-#          CONCOURSE_TEAM: {{pcf-organization-am2}}
-#          CONCOURSE_URL: {{concourse-url-am2-prod}}
