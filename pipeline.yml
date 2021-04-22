@@ -19,7 +19,7 @@ resources:
   - name: app-ci-source
     type: git
     source:
-      <<: *github_config
+      <<: *github_app
       paths:
         - ci
 
