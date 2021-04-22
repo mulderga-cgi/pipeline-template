@@ -1,0 +1,105 @@
+aliases:
+  - &github_config
+    branch: main
+    params:
+      depth: 1
+
+  - &github_pipeline
+    <<: *github_config
+    uri: {{pipeline-github-uri}}
+
+  - &github_app
+    <<: *github_config
+    uri: {{app-github-uri}}
+
+  - &slack_config
+    username: Concourse
+    icon_emoji: ':confetti_ball:'
+    silent: true
+
+  - &success_slack_update
+    put: slack-alert
+    params:
+      <<: *slack_config
+      text: ':tada: Job *$BUILD_JOB_NAME* of pipeline *$BUILD_PIPELINE_NAME* has succeeded!'
+
+  - &failure_slack_update
+    put: slack-alert
+    params:
+      <<: *slack_config
+      text: ':cry: Job *$BUILD_JOB_NAME* of pipeline *$BUILD_PIPELINE_NAME* has failed!'
+
+resources:
+  - name: app-source
+    type: git
+    icon: github
+    source:
+      <<: *github_app
+      ignore_paths:
+        - ci
+
+  - name: app-ci-source
+    type: git
+    icon: code-tags
+    source:
+      <<: *github_config
+      paths:
+        - ci
+
+  - name: pipeline-source
+    type: git
+    icon: pipe
+    source:
+      <<: *github_pipeline
+      branch: master
+
+resource_types:
+  - name: slack-alert
+    icon: slack
+    type: slack-notification
+    source:
+      url: {{slack-webtoken}}
+
+groups:
+  - name: app
+      jobs:
+        - build-and-test
+#  - name: pipeline
+#    jobs:
+#      - deploy-pipeline
+
+jobs:
+  - name: build-and-test
+    serial: true
+    on_success:
+      <<: *success_slack_update
+    on_failure:
+      <<: *failure_slack_update
+    plan:
+      - in_parallel:
+          - get: app-source
+            trigger: true
+          - get: app-ci-source
+      - task: build-and-test-app
+        privileged: true
+        file: app-ci-source/ci/tasks/build-and-test.yml
+        params:
+          MY_PARAM: {{my-param}}
+
+#  - name: deploy-pipeline
+#    serial: true
+#    plan:
+#      - in_parallel:
+#          - get: app-ci-source
+#            trigger: true
+#          - get: pipeline-source
+#            trigger: true
+#      - task: deploy-pipeline
+#        privileged: true
+#        file: pipeline-source/tasks/deploy-pipeline.yml
+#        params:
+#          PIPELINE_NAME: {{app-project-name}}
+#          CONCOURSE_USER: {{concourse-username-am2-prod}}
+#          CONCOURSE_PASS: {{concourse-password-am2-prod}}
+#          CONCOURSE_TEAM: {{pcf-organization-am2}}
+#          CONCOURSE_URL: {{concourse-url-am2-prod}}
